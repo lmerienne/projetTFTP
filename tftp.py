@@ -27,6 +27,9 @@ def runServer(addr, timeout, thread):
 
 def put(addr, filename, targetname, blksize, timeout):
     # todo
+    s = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+    
+
     pass
 
 ########################################################################
