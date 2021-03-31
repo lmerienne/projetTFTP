@@ -42,7 +42,7 @@ def runServer(addr, timeout, thread):
                 requete += line
             s.sendto(requete,addr_client)
         if opcode == 2 :
-            send_ack(addr_client)                                       #write request
+            send_ack(addr_client, s)                                       #write request
             targetname = open(targetname,'wb')
             file_to_put = open(filename,'rb')
         #    for line in file_to_put :
@@ -57,6 +57,7 @@ def runServer(addr, timeout, thread):
 
 def put(addr, filename, targetname, blksize, timeout):
     # todo
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     requete = bytearray()
     requete.append(0)
     requete.append(2)
@@ -101,13 +102,14 @@ def get(addr, filename, targetname, blksize, timeout):
 
 # EOF
 
-def send_ack(addr_client) :
+def send_ack(addr_client, s) :
     ack = bytearray()
     ack.append(0)
     ack.append(4)
     s.sendto(ack,addr_client)
 
 def is_ack(data) :
+    frame = data
     frame1 = frame[0:2]
     if int.from_bytes(frame1, byteorder='big') == 4 :
         return True 
