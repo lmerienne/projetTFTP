@@ -34,7 +34,10 @@ def runServer(addr, timeout, thread):
         mode = args[1].decode('ascii') 
         if opcode == 1 :                                        #read request
             print("action READ\n")
-            file_object = open(filename,'rb')
+            try:
+                file_object = open(filename,'rb')
+            except Exception as e :
+                print("ERROR:", e)
             requete = bytearray()
             requete.append(0)
             requete.append(3)                    
