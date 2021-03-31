@@ -36,7 +36,8 @@ def runServer(addr, timeout, thread):
                 s.sendto(line,addr)
         if opcode == 2 :                                       #write request
             file_object = open(filename,'wb')
-            while 
+            for line in file_object :
+
 
         print('[{}:{}] client request: {}'.format(addr[0], addr[1], data))
         
@@ -51,9 +52,19 @@ def runServer(addr, timeout, thread):
 def put(addr, filename, targetname, blksize, timeout):
     # todo
     s = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+    requete = bytearray()
+    requete.append(0)
+    requete.append(2)
+    filename = filename.encode('utf-8')
+    requete += filename
+    requete.append(0)
+    mode = bytearray(bytes('octet', 'utf-8'))
+    requete += mode
+    requete.append(0)
+    s.sendto(requete,addr)
     targetname = open(filename,'rb')
     for line in targetname :
-        s.sendto(line, (addr[0],addr[1]))
+        s.sendto(line, addr)
 
         
         
@@ -69,6 +80,17 @@ def put(addr, filename, targetname, blksize, timeout):
 
 def get(addr, filename, targetname, blksize, timeout):
     # todo
+    s = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+    requete = bytearray()
+    requete.append(0)
+    requete.append(1)
+    filename = filename.encode('utf-8')
+    requete += filename
+    requete.append(0)
+    mode = bytearray(bytes('octet', 'utf-8'))
+    requete += mode
+    requete.append(0)
+    s.sendto(requete,addr)
     pass
 
 # EOF
