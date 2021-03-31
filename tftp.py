@@ -45,11 +45,17 @@ def runServer(addr, timeout, thread):
                 requete += line
             s.sendto(requete,addr_client)
         if opcode == 2 :
+            print("action GET\n")
             send_ack(addr_client, s)                                       #write request
-            targetname = open(targetname,'wb')
             file_to_put = open(filename,'rb')
-        #    for line in file_to_put :
-        
+            targetname = open("targetname.txt", 'wb')
+            for line in file_to_put :
+                print("ce qui doit etre put :",line)
+                targetname.write(line)
+
+                
+                
+            
     s.close()
     pass
 
@@ -70,7 +76,7 @@ def put(addr, filename, targetname, blksize, timeout):
     mode = bytearray(bytes('octet', 'utf-8'))
     requete += mode
     requete.append(0)
-    s.sendto(requete,addr)
+    s.sendto(requete,('localhost',6969))
     print("[myclient:",addr[1]," -> myserver:6969] WRQ")
     accuse_recep , addr = s.recvfrom(512)
     #if is_ack(accuse_recep) :
