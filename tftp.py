@@ -145,7 +145,7 @@ def get(addr, filename, targetname, blksize, timeout):
     data_retour,addr3 =s.recvfrom(512)
     print("data retourné par le serveur :", data_retour)
     frame = data_retour
-    frame2 = frame[4::]
+    frame2 = frame[3:]
     print("frame2 =",frame2)
     args = frame2.split(b'\x00')
     print("args =", args)
