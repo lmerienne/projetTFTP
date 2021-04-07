@@ -32,38 +32,57 @@ def runServer(addr, timeout, thread):
         args = frame2.split(b'\x00')                      
         filename = args[0].decode('ascii')                
         mode = args[1].decode('ascii') 
-        s.sendto(data,addr_client)
-        if opcode == 1 :                                        #read request
+        
+        if opcode == 2 :                                                                # LORSQUE LE SERVEUR RECOIT UNE REQUÈTE DE TYPE WRITE 
+            socket_reception = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            print(socket_reception.getsockname())
+            print("action PUT")
+            print("adresse du client: ", addr_client[0])
+            print("port du client : ", addr_client[1])
+            send_ack(addr_client, socket_reception)                                       
+            targetname = open("targetname.txt", 'wb')
+            data , addr_client = socket_reception.recvfrom(512)
+            print("data envoyé pour le put :", data)
+            frame = data
+            frame2 = frame[2:]
+            print("frame2 =",frame2)
+            args = frame2.split(b'\x00')
+            print("args =", args)
+            while len(frame2) <= 512 :
+                if len(frame2) < 512 :
+                    for i in range (len(args)) :
+                        targetname.write(args[i])
+                        print("requete data de taille inferieure à 512 octets !")
+                    break
+                for i in range (len(args)) :
+                    targetname.write(args[i])
+                data, addr3 =s.recvfrom(512)
+                
+            
+    
+        
+        
+        if opcode == 1 :
+            s.sendto(data,addr_client)                                         # QUAND LE SERVEUR RECOIT UNE REQUETE DE TYPE READ
             print("action READ\n")
             print("adresse du client: ", addr_client[0],"\n")
             print("port du client : ", addr_client[1])
             try:
-                file_object = open(filename,'rb')
+                file_object = open(filename,'r+b')
             except Exception as e :
                 print("ERROR:", e)
-            socket_connecté = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            socket_connecté.sendto(bytearray(str(addr_client[1]).encode('ascii')),addr_client)
+            socket_envoie = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            socket_envoie.sendto(bytearray(str(addr_client[1]).encode('ascii')),addr_client)
             requete = bytearray()
             requete.append(0)
-            requete.append(3)                    
+            requete.append(3)
+            requete.append(1)                    
             for line in file_object :
+                print("line = ",line)
                 requete += line
-            socket_connecté.sendto(requete,addr_client)
+            socket_envoie.sendto(requete,addr_client)
             
-        if opcode == 2 :
-            print("action GET")
-            print("adresse du client: ", addr_client[0])
-            print("port du client : ", addr_client[1])
-            send_ack(addr_client, s)                                       #write request
-            file_to_put = open(filename,'rb')
-            targetname = open("targetname.txt", 'wb')
-            for line in file_to_put :
-                print("ce qui doit etre put :",line)
-                targetname.write(line)
-
-                
-                
-            
+               
     s.close()
     pass
 
@@ -86,9 +105,16 @@ def put(addr, filename, targetname, blksize, timeout):
     requete.append(0)
     host = 'localhost'
     s.sendto(requete,(host,6969))
-    print("[myclient:",host," -> myserver:6969] WRQ")
+    print("[myclient:",host," -> myserver:",addr[1],"] WRQ ",requete)
     accuse_recep , addr = s.recvfrom(512)
-    #if is_ack(accuse_recep) :
+    print("accuse_recep :",accuse_recep)
+    if is_ack(accuse_recep) :
+        print("dans le ack")
+        file_to_put = open(filename,'r+b')
+        for line in file_to_put :
+                print("ce qui doit etre put :",line)
+                s.sendto(line,addr)
+    s.close()
     pass
 
 
@@ -114,10 +140,32 @@ def get(addr, filename, targetname, blksize, timeout):
     s.sendto(requete,('localhost',addr[1]))
     data,addr1 = s.recvfrom(512)
     port, addr2 = s.recvfrom(512)
-    try :
-        data_retour,addr3 =s.recvfrom(512)
-    except :
-        print("error\n")
+    #try :
+    targetname = open(targetname,'w+b')
+    data_retour,addr3 =s.recvfrom(512)
+    print("data retourné par le serveur :", data_retour)
+    frame = data_retour
+    frame2 = frame[4::]
+    print("frame2 =",frame2)
+    args = frame2.split(b'\x00')
+    print("args =", args)
+    print("taille du bloc = ",len(data_retour))
+    while len(frame2) <= 512 :
+        if len(frame2) < 512 :
+            for i in range (len(args)) :
+                targetname.write(args[i])
+                print("requete data de taille inferieure à 512 octets !")
+            break
+        for i in range (len(args)) :
+                targetname.write(args[i])
+        data_retour, addr3 =s.recvfrom(512)
+        
+        
+        
+        
+        
+    #except :
+     #   print("error\n")
     ack = bytearray()
     ack.append(0)
     ack.append(4)
