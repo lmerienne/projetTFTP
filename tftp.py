@@ -35,28 +35,29 @@ def runServer(addr, timeout, thread):
         
         if opcode == 2 :                                                                # LORSQUE LE SERVEUR RECOIT UNE REQUÈTE DE TYPE WRITE 
             socket_reception = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            numero = 0
             print(socket_reception.getsockname())
             print("action PUT")
             print("adresse du client: ", addr_client[0])
             print("port du client : ", addr_client[1])
-            send_ack(addr_client, socket_reception)                                       
+            send_ack(addr_client, socket_reception,numero)                                       
             targetname = open("targetname.txt", 'wb')
             data , addr_client = socket_reception.recvfrom(512)
             print("data envoyé pour le put :", data)
             frame = data
-            frame2 = frame[2:]
+            frame2 = frame[3:]
             print("frame2 =",frame2)
-            args = frame2.split(b'\x00')
-            print("args =", args)
-            while len(frame2) <= 512 :
-                if len(frame2) < 512 :
-                    for i in range (len(args)) :
-                        targetname.write(args[i])
-                        print("requete data de taille inferieure à 512 octets !")
-                    break
-                for i in range (len(args)) :
-                    targetname.write(args[i])
-                data, addr3 =s.recvfrom(512)
+            numero += 1
+            while len(data) == 512 :
+                targetname.write(frame2)
+                send_ack(addr_client,socket_reception,numero)
+                numero += 1
+                data,addr_client = socket_reception.recvfrom(512)
+                frame = data
+                frame2 = frame [4:]
+            targetname.write(frame2)
+            socket_reception.close()
+                
                 
             
     
@@ -80,7 +81,7 @@ def runServer(addr, timeout, thread):
             requete.append(numero_bloc_data)                
             for line in file_object :
                 for i in line :   
-                    if len(requete) >= 512 :
+                    if len(requete) == 512 :
                         socket_envoie.sendto(requete,addr_client)
                         numero_bloc_data += 1
                         del requete[:]
@@ -114,15 +115,30 @@ def put(addr, filename, targetname, blksize, timeout):
     requete.append(0)
     host = 'localhost'
     s.sendto(requete,(host,6969))
-    print("[myclient:",host," -> myserver:",addr[1],"] WRQ ",requete)
-    accuse_recep , addr = s.recvfrom(512)
-    print("accuse_recep :",accuse_recep)
-    if is_ack(accuse_recep) :
-        print("dans le ack")
-        file_to_put = open(filename,'r+b')
-        for line in file_to_put :
-                print("ce qui doit etre put :",line)
-                s.sendto(line,addr)
+    #print("[myclient:",host," -> myserver:",addr[1],"] WRQ ",requete)
+    file_to_put = open(filename,'r+b')
+    numero_bloc_data = 0
+    del requete[:]
+    requete.append(0)
+    requete.append(3)
+    requete.append(numero_bloc_data)
+    for line in file_to_put :
+        for i in line :
+            if len(requete) == 512 :
+                print("bloque pret a etre envoyer")
+                accuse_recep ,addr_serveur = s.recvfrom(512)
+                if is_ack(accuse_recep) :
+                    print("data que va envoyer le client :",requete)
+                    s.sendto(requete,addr_serveur)
+                    numero_bloc_data += 1
+                    del requete[:]
+                    requete.append(0)
+                    requete.append(3)
+                    requete.append(numero_bloc_data)
+            requete += bytearray(chr(i).encode('ascii'))
+    print("derniere requete que va envoyer le serveur :",requete)
+    s.sendto(requete,addr_serveur)
+    
     s.close()
     pass
 
