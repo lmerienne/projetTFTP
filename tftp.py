@@ -63,6 +63,7 @@ def runServer(addr, timeout, thread):
         
         
         if opcode == 1 :
+            numero_bloc_data = 1
             s.sendto(data,addr_client)                                         # QUAND LE SERVEUR RECOIT UNE REQUETE DE TYPE READ
             print("action READ\n")
             print("adresse du client: ", addr_client[0],"\n")
@@ -76,11 +77,19 @@ def runServer(addr, timeout, thread):
             requete = bytearray()
             requete.append(0)
             requete.append(3)
-            requete.append(1)                    
+            requete.append(numero_bloc_data)                
             for line in file_object :
-                print("line = ",line)
-                requete += line
+                for i in line :   
+                    if len(requete) >= 512 :
+                        socket_envoie.sendto(requete,addr_client)
+                        numero_bloc_data += 1
+                        del requete[:]
+                        requete.append(0)
+                        requete.append(3)
+                        requete.append(numero_bloc_data)
+                    requete += bytearray(chr(i).encode('ascii'))
             socket_envoie.sendto(requete,addr_client)
+            
             
                
     s.close()
@@ -146,33 +155,27 @@ def get(addr, filename, targetname, blksize, timeout):
     print("data retourné par le serveur :", data_retour)
     frame = data_retour
     frame2 = frame[3:]
-    print("frame2 =",frame2)
     args = frame2.split(b'\x00')
-    print("args =", args)
-    print("taille du bloc = ",len(data_retour))
-    while len(frame2) <= 512 :
-        if len(frame2) < 512 :
-            for i in range (len(args)) :
-                targetname.write(args[i])
-                print("requete data de taille inferieure à 512 octets !")
-            break
-        for i in range (len(args)) :
-                targetname.write(args[i])
+    while len(data_retour) == 512 :
+        print("taille du bloc = ",len(data_retour))
+        targetname.write(frame2)
         data_retour, addr3 =s.recvfrom(512)
+        send_ack(addr3,s)
+        print("ack envoyé au serveur")
+        frame = data_retour
+        frame2 = frame[3:]
+        print("data de retour :",data_retour)
+    if len(data_retour) < 512 :
+            targetname.write(frame2)
+            print("ack envoyé au serveur")
+            print("requete data de taille inferieure à 512 octets !")
         
-        
-        
-        
-        
+    
     #except :
      #   print("error\n")
-    ack = bytearray()
-    ack.append(0)
-    ack.append(4)
-    s.sendto(ack,addr3)
-    print("[myclient:",int(port)," -> myserver :",addr[1],"] RRQ =",data)
-    print("[myserver:",int(addr2[1])," -> myclient : ",int(port),"] DAT1 =",data_retour)
-    print("[myclient:",int(port)," -> myserver:",addr2[1],"] ACK1 =",ack)
+    #print("[myclient:",int(port)," -> myserver :",addr[1],"] RRQ =",data)
+    #print("[myserver:",int(addr2[1])," -> myclient : ",int(port),"] DAT1 =",data_retour)
+    #print("[myclient:",int(port)," -> myserver:",addr2[1],"] ACK1 =",ack)
 
 
     s.close()
