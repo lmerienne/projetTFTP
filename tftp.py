@@ -156,18 +156,22 @@ def get(addr, filename, targetname, blksize, timeout):
     frame = data_retour
     frame2 = frame[3:]
     args = frame2.split(b'\x00')
+    numero = 0
     while len(data_retour) == 512 :
         print("taille du bloc = ",len(data_retour))
         targetname.write(frame2)
         data_retour, addr3 =s.recvfrom(512)
-        send_ack(addr3,s)
-        print("ack envoyé au serveur")
+        send_ack(addr3,s,numero)
+        numero += 1
+        print("ack envoyé au serveur numero ",numero)
         frame = data_retour
         frame2 = frame[3:]
         print("data de retour :",data_retour)
     if len(data_retour) < 512 :
+            print("taille du bloc = ",len(data_retour))
             targetname.write(frame2)
-            print("ack envoyé au serveur")
+            send_ack(addr3,s,numero)
+            print("ack envoyé au serveur numero",3)
             print("requete data de taille inferieure à 512 octets !")
         
     
@@ -183,10 +187,13 @@ def get(addr, filename, targetname, blksize, timeout):
 
 # EOF
 
-def send_ack(addr_client, s) :
+def send_ack(addr_client, s,numero) :
     ack = bytearray()
     ack.append(0)
     ack.append(4)
+    ack.append(0)
+    ack.append(numero)
+    print('ack = ',ack)
     s.sendto(ack,addr_client)
     
 
