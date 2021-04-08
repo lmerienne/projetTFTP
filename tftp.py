@@ -43,19 +43,24 @@ def runServer(addr, timeout, thread):
             send_ack(addr_client, socket_reception,numero)                                       
             targetname = open("targetname.txt", 'wb')
             data , addr_client = socket_reception.recvfrom(512)
-            print("data envoyé pour le put :", data)
+            print("paquet envoyé par le client :", data)
             frame = data
             frame2 = frame[3:]
-            print("frame2 =",frame2)
+            print("paquet à ecrire sur le fichier serveur :",frame2,"\n")
             numero += 1
             while len(data) == 512 :
+                print("paquet à ecrire sur le fichier serveur :",frame2)
                 targetname.write(frame2)
                 send_ack(addr_client,socket_reception,numero)
+                print("accuse de recpetion du paquet pour le client\n")
                 numero += 1
                 data,addr_client = socket_reception.recvfrom(512)
                 frame = data
                 frame2 = frame [4:]
+            print("dernier paquet à ecrire sur le fichier serveur")
             targetname.write(frame2)
+            send_ack(addr_client,socket_reception,numero)
+            print("dernier accuse de recpetion de paquet pour le client\n")
             socket_reception.close()
                 
                 
@@ -128,7 +133,7 @@ def put(addr, filename, targetname, blksize, timeout):
                 print("bloque pret a etre envoyer")
                 accuse_recep ,addr_serveur = s.recvfrom(512)
                 if is_ack(accuse_recep) :
-                    print("data que va envoyer le client :",requete)
+                    print("data que va envoyer le client :",requete,"\n")
                     s.sendto(requete,addr_serveur)
                     numero_bloc_data += 1
                     del requete[:]
