@@ -153,7 +153,7 @@ def put(addr, filename, targetname, blksize, timeout):
     host = 'localhost'
     s.sendto(requete,(host,addr[1]))
     port_client = s.getsockname()
-    print("[myclient:",port_client[1]," -> myserver :",addr[1],"] RRQ =",requete)
+    print("[myclient:",port_client[1]," -> myserver :",addr[1],"] WRQ =",requete)
     #print("[myclient:",host," -> myserver:",addr[1],"] WRQ ",requete)
     numero_bloc_data = 1
     numero_bloc_ack = 0
@@ -198,8 +198,6 @@ def put(addr, filename, targetname, blksize, timeout):
                     requete.append(0)
                     requete.append(numero_bloc_data)
             requete += bytearray(chr(i).encode('ascii'))
-    print("[myserveur:",addr_serveur[1]," -> myclient:",port_client[1],"] ACK",numero_bloc_ack," =",accuse_recep, sep="")
-    numero_bloc_ack += 1
     s.sendto(requete,addr_serveur)
     print("[myclient:",port_client[1]," -> myserver :",addr_serveur[1],"] DAT",numero_bloc_data, "=",requete, sep="")
     numero_bloc_data += 1
