@@ -47,7 +47,6 @@ def runServer(addr, timeout, thread):
             ack.append(numero-1)
             socket_reception.sendto(ack,addr_client)  
             del ack[:]                                    
-            targetname = open("targetname.txt", 'wb')
             print("avant data")
             data , addr_client = socket_reception.recvfrom(512)
             print("data = ",data)
@@ -59,35 +58,38 @@ def runServer(addr, timeout, thread):
                 frame = data
                 frame2 = frame[4:]
                 print("ERROR")
-            print("paquet envoyé par le client :", data)
-            frame = data
-            frame2 = frame[4:]
-            print("paquet à ecrire sur le fichier serveur :",frame2,"\n")
-            numero += 1
-            while len(data) == 512 :
-                print("paquet à ecrire sur le fichier serveur :",frame2)
+                socket_reception.close()
+            else :
+                targetname = open("targetname.txt", 'wb')
+                print("paquet envoyé par le client :", data)
+                frame = data
+                frame2 = frame[4:]
+                print("paquet à ecrire sur le fichier serveur :",frame2,"\n")
+                numero += 1
+                while len(data) == 512 :
+                    print("paquet à ecrire sur le fichier serveur :",frame2)
+                    targetname.write(frame2)
+                    ack.append(0)
+                    ack.append(4)
+                    ack.append(0)
+                    ack.append(numero-1)
+                    socket_reception.sendto(ack,addr_client)
+                    del ack[:]
+                    print("accuse de recpetion du paquet pour le client\n")
+                    numero += 1
+                    data,addr_client = socket_reception.recvfrom(512)
+                    frame = data
+                    frame2 = frame [4:]
+                print("dernier paquet à ecrire sur le fichier serveur")
                 targetname.write(frame2)
                 ack.append(0)
                 ack.append(4)
                 ack.append(0)
                 ack.append(numero-1)
                 socket_reception.sendto(ack,addr_client)
-                del ack[:]
-                print("accuse de recpetion du paquet pour le client\n")
-                numero += 1
-                data,addr_client = socket_reception.recvfrom(512)
-                frame = data
-                frame2 = frame [4:]
-            print("dernier paquet à ecrire sur le fichier serveur")
-            targetname.write(frame2)
-            ack.append(0)
-            ack.append(4)
-            ack.append(0)
-            ack.append(numero-1)
-            socket_reception.sendto(ack,addr_client)
-            print("dernier accuse de recpetion de paquet pour le client\n")
-            socket_reception.close()
-                
+                print("dernier accuse de recpetion de paquet pour le client\n")
+                socket_reception.close()
+
                 
             
     
@@ -153,9 +155,12 @@ def put(addr, filename, targetname, blksize, timeout):
     port_client = s.getsockname()
     print("[myclient:",port_client[1]," -> myserver :",addr[1],"] RRQ =",requete)
     #print("[myclient:",host," -> myserver:",addr[1],"] WRQ ",requete)
+    numero_bloc_data = 1
+    numero_bloc_ack = 0
     accuse_recep ,addr_serveur = s.recvfrom(512)
     if is_ack(accuse_recep): 
-        print("ack")
+        print("[myserveur:",addr_serveur[1]," -> myclient:",port_client[1],"] ACK",numero_bloc_ack," =",accuse_recep, sep="")
+        numero_bloc_ack += 1
         try :
             file_to_put = open(filename,'r+b')
         except Exception as e  :
@@ -169,9 +174,9 @@ def put(addr, filename, targetname, blksize, timeout):
             host = 'localhost'
             s.sendto(requete,addr_serveur)
             print("ERROR :",bytearray(str(e).encode('ascii')))
+            sys.exit(1)
     
-    numero_bloc_data = 1
-    numero_bloc_ack = 0
+
     del requete[:]
     requete.append(0)
     requete.append(3)
@@ -180,20 +185,19 @@ def put(addr, filename, targetname, blksize, timeout):
     for line in file_to_put :
         for i in line :
             if len(requete) == 512 :
-                accuse_recep ,addr_serveur = s.recvfrom(512)
-                print("[myserveur:",addr_serveur[1]," -> myclient:",port_client[1],"] ACK",numero_bloc_ack," =",accuse_recep, sep="")
-                numero_bloc_ack += 1
                 if is_ack(accuse_recep) :
                     s.sendto(requete,addr_serveur)
                     print("[myclient:",port_client[1]," -> myserver :",addr_serveur[1],"] DAT",numero_bloc_data, "=",requete, sep="")
                     numero_bloc_data += 1
+                    accuse_recep ,addr_serveur = s.recvfrom(512)
+                    print("[myserveur:",addr_serveur[1]," -> myclient:",port_client[1],"] ACK",numero_bloc_ack," =",accuse_recep, sep="")
+                    numero_bloc_ack += 1
                     del requete[:]
                     requete.append(0)
                     requete.append(3)
                     requete.append(0)
                     requete.append(numero_bloc_data)
             requete += bytearray(chr(i).encode('ascii'))
-    accuse_recep ,addr_serveur = s.recvfrom(512)
     print("[myserveur:",addr_serveur[1]," -> myclient:",port_client[1],"] ACK",numero_bloc_ack," =",accuse_recep, sep="")
     numero_bloc_ack += 1
     s.sendto(requete,addr_serveur)
