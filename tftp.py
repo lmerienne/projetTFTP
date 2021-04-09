@@ -136,7 +136,7 @@ def put(addr, filename, targetname, blksize, timeout):
     host = 'localhost'
     s.sendto(requete,(host,addr[1]))
     port_client = s.getsockname()
-    print("[myclient:",port_client[1]," -> myserver :",addr[1],"] RRQ =",requete)
+    print("[myclient:",port_client[1]," -> myserver :",addr[1],"] WRQ=",requete)
     #print("[myclient:",host," -> myserver:",addr[1],"] WRQ ",requete)
     file_to_put = open(filename,'r+b')
     numero_bloc_data = 1
