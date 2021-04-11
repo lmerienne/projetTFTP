@@ -96,6 +96,7 @@ def runServer(addr, timeout, thread):
         
         
         if opcode == 1 :
+            socket_envoie = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             numero_bloc_data = 1                                       # QUAND LE SERVEUR RECOIT UNE REQUETE DE TYPE READ
             print("action READ\n")
             print("adresse du client: ", addr_client[0],"\n")
@@ -103,25 +104,36 @@ def runServer(addr, timeout, thread):
             try:
                 file_object = open(filename,'r+b')
             except Exception as e :
-                print("ERROR:", e)
-            socket_envoie = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            requete = bytearray()
-            requete.append(0)
-            requete.append(3)
-            requete.append(0)
-            requete.append(numero_bloc_data)                
-            for line in file_object :
-                for i in line :   
-                    if len(requete) == 512 :
-                        socket_envoie.sendto(requete,addr_client)
-                        numero_bloc_data += 1
-                        del requete[:]
-                        requete.append(0)
-                        requete.append(3)
-                        requete.append(0)
-                        requete.append(numero_bloc_data)
-                    requete += bytearray(chr(i).encode('ascii'))
-            socket_envoie.sendto(requete,addr_client)
+                requete = bytearray()
+                requete.append(0)
+                requete.append(5)               #OPCODE
+                requete.append(0)
+                requete.append(1)
+                requete += bytearray(str(e).encode('ascii'))
+                requete.append(0)
+                host = 'localhost'
+                socket_envoie.sendto(requete,addr_client)
+                print("ERROR :",bytearray(str(e).encode('ascii')))
+                socket_envoie.close()
+                
+            else :
+                requete = bytearray()
+                requete.append(0)
+                requete.append(3)
+                requete.append(0)
+                requete.append(numero_bloc_data)                
+                for line in file_object :
+                    for i in line :   
+                        if len(requete) == 512 :
+                            socket_envoie.sendto(requete,addr_client)
+                            numero_bloc_data += 1
+                            del requete[:]
+                            requete.append(0)
+                            requete.append(3)
+                            requete.append(0)
+                            requete.append(numero_bloc_data)
+                        requete += bytearray(chr(i).encode('ascii'))
+                socket_envoie.sendto(requete,addr_client)
         
         
             
@@ -229,11 +241,16 @@ def get(addr, filename, targetname, blksize, timeout):
     s.sendto(requete,('localhost',addr[1]))
     port_client = s.getsockname()
     print("[myclient:",port_client[1]," -> myserver :",addr[1],"] RRQ =",requete)
-    targetname = open(targetname,'w+b')
     data_retour,addr3 =s.recvfrom(512)
     print("[myserver:",addr3[1]," -> myclient : ",port_client[1],"] DAT",1," =",data_retour, sep ="")
     frame = data_retour
+    frame1 = data_retour[0:2]
     frame2 = frame[4:]
+    opcode = opcode = int.from_bytes(frame1, byteorder='big')
+    if opcode == 5 :
+        print("ERROR :",frame2)
+        sys.exit(1)
+    targetname = open(targetname,'w+b')
     args = frame2.split(b'\x00')
     numero = 1
     ack = bytearray()
