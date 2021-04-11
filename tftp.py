@@ -109,11 +109,11 @@ def runServer(addr, timeout, thread):
                 requete.append(5)               #OPCODE
                 requete.append(0)
                 requete.append(1)
-                requete += bytearray(str(e).encode('ascii'))
+                requete += bytearray(str(e).encode('utf-8'))
                 requete.append(0)
                 host = 'localhost'
                 socket_envoie.sendto(requete,addr_client)
-                print("ERROR :",bytearray(str(e).encode('ascii')))
+                print("ERROR :",bytearray(str(e).encode('utf-8')))
                 socket_envoie.close()
                 
             else :
@@ -132,7 +132,7 @@ def runServer(addr, timeout, thread):
                             requete.append(3)
                             requete.append(0)
                             requete.append(numero_bloc_data)
-                        requete += bytearray(chr(i).encode('ascii'))
+                        requete += bytearray(chr(i).encode('utf-8'))
                 socket_envoie.sendto(requete,addr_client)
         
         
@@ -181,11 +181,11 @@ def put(addr, filename, targetname, blksize, timeout):
             requete.append(5)               #OPCODE
             requete.append(0)
             requete.append(1)
-            requete += bytearray(str(e).encode('ascii'))
+            requete += bytearray(str(e).encode('utf-8'))
             requete.append(0)
             host = 'localhost'
             s.sendto(requete,addr_serveur)
-            print("ERROR :",bytearray(str(e).encode('ascii')))
+            print("ERROR :",bytearray(str(e).encode('utf-8')))
             sys.exit(1)
     
 
@@ -209,7 +209,7 @@ def put(addr, filename, targetname, blksize, timeout):
                     requete.append(3)
                     requete.append(0)
                     requete.append(numero_bloc_data)
-            requete += bytearray(chr(i).encode('ascii'))
+            requete += bytearray(chr(i).encode('utf-8'))
     s.sendto(requete,addr_serveur)
     print("[myclient:",port_client[1]," -> myserver :",addr_serveur[1],"] DAT",numero_bloc_data, "=",requete, sep="")
     numero_bloc_data += 1
