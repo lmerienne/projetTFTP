@@ -60,7 +60,7 @@ def runServer(addr, timeout, thread):
                 print("ERROR")
                 socket_reception.close()
             else :
-                targetname = open(filename, 'wb')
+                targetname = open(filename, 'wb')                           #ICI MODIFIÉ POUR LE VPL
                 print("paquet envoyé par le client :", data)
                 frame = data
                 frame2 = frame[4:]
