@@ -60,7 +60,7 @@ def runServer(addr, timeout, thread):
                 print("ERROR")
                 socket_reception.close()
             else :
-                targetname = open('fichier_put.txt', 'wb')
+                targetname = open(filename, 'wb')
                 print("paquet envoyé par le client :", data)
                 frame = data
                 frame2 = frame[4:]
@@ -88,6 +88,7 @@ def runServer(addr, timeout, thread):
                 ack.append(numero-1)
                 socket_reception.sendto(ack,addr_client)
                 print("dernier accuse de recpetion de paquet pour le client\n")
+                targetname.close()
                 socket_reception.close()
                 
                 
