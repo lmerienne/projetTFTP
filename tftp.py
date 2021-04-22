@@ -4,7 +4,7 @@ TFTP Module.
 
 import socket
 import sys
-
+import os
 ########################################################################
 #                          COMMON ROUTINES                             #
 ########################################################################
@@ -46,6 +46,7 @@ def runServer(addr, timeout, thread):
             print("taille bloc =", taille_bloc)
         else :
             taille_bloc = 512
+            print("taille bloc =",taille_bloc)
 
         
         if opcode == 2 :                                                                # LORSQUE LE SERVEUR RECOIT UNE REQUÈTE DE TYPE WRITE 
@@ -134,13 +135,15 @@ def runServer(addr, timeout, thread):
                 socket_envoie.close()
                 
             else :
+                fichier_entier_taille = os.path.getsize(filename)
+                print("taille fichier =", fichier_entier_taille)
                 print("entree dans else")
                 requete = bytearray()
                 requete.append(0)
                 requete.append(3)
                 requete.append(0)
                 requete.append(numero_bloc_data)                
-                for line in file_object :
+                """for line in file_object :
                     for i in line :  
                         if (len(requete) - 4) == taille_bloc :
                             print("requete = ",requete)
@@ -156,7 +159,58 @@ def runServer(addr, timeout, thread):
                         requete += bytearray(chr(i).encode('utf-8'))
                         print("taille requete =",len(requete) - 4)
                         print("taille bloc blksize =", taille_bloc)
-                socket_envoie.sendto(requete,addr_client)
+                socket_envoie.sendto(requete,addr_client)"""
+                
+                emplacement = taille_bloc
+                nombre_octets_restants = fichier_entier_taille
+                if fichier_entier_taille >= taille_bloc :
+                    partie_fichier = file_object.read(taille_bloc)
+                    print("partie_fichier =",partie_fichier)
+                    requete += bytearray(partie_fichier)
+                    print("requete premier ajout :",requete)
+                    socket_envoie.sendto(requete,addr_client)
+                    numero_bloc_data += 1
+                    del requete[:]
+                    requete.append(0)
+                    requete.append(3)
+                    requete.append(0)
+                    requete.append(numero_bloc_data)
+                    nombre_octets_restants -= taille_bloc
+                    file_object.seek(emplacement)
+                    
+                else :
+                    fichier_entier = file_object.read()
+                    requete += bytearray(fichier_entier)
+                    print("requete quand inferieur a taille blksize",requete)
+                    socket_envoie.sendto(requete, addr_client)
+                accuse_recep, addr_client = socket_envoie.recvfrom(512)
+                while nombre_octets_restants >= taille_bloc :
+                    print("nombre octets restants =", nombre_octets_restants)
+                    if is_ack(accuse_recep) :
+                        partie_fichier = file_object.read(taille_bloc)
+                        emplacement += taille_bloc
+                        print("data à put :", partie_fichier)
+                        requete += bytearray(partie_fichier)
+                        print("requete a envoyé :",requete)
+                        socket_envoie.sendto(requete,addr_client)
+                        numero_bloc_data += 1
+                        del requete[:]
+                        requete.append(0)
+                        requete.append(3)
+                        requete.append(0)
+                        requete.append(numero_bloc_data)
+                        nombre_octets_restants -= taille_bloc
+                        file_object.seek(emplacement)
+                        accuse_recep, addr_client = socket_envoie.recvfrom(512)
+                if is_ack(accuse_recep) :
+                    partie_fichier = file_object.read(taille_bloc)
+                    emplacement += taille_bloc
+                    print("data à put :", partie_fichier)
+                    requete += bytearray(partie_fichier)
+                    print("requete a envoyé :",requete)
+                    socket_envoie.sendto(requete,addr_client)
+                        
+
         
         
             
@@ -346,4 +400,8 @@ def is_ack(data) :
         return True 
     else :
         return False
+
+
+
+
 
