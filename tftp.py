@@ -258,7 +258,7 @@ def put(addr, filename, targetname, blksize, timeout):
         print("[myserveur:",addr_serveur[1]," -> myclient:",port_client[1],"] ACK",numero_bloc_ack," =",accuse_recep, sep="")
         numero_bloc_ack += 1
         try :
-            file_to_put = open(filename,'r+b')
+            file_object = open(filename,'r+b')
         except Exception as e  :
             requete = bytearray()
             requete.append(0)
@@ -278,7 +278,7 @@ def put(addr, filename, targetname, blksize, timeout):
     requete.append(3)
     requete.append(0)
     requete.append(numero_bloc_data)
-    for line in file_to_put :
+    """for line in file_to_put :
         for i in line :
             if (len(requete) - 4) == blksize :
                 if is_ack(accuse_recep) :
@@ -299,7 +299,63 @@ def put(addr, filename, targetname, blksize, timeout):
     numero_bloc_data += 1
     accuse_recep ,addr_serveur = s.recvfrom(512)
     print("[myserveur:",addr_serveur[1]," -> myclient:",port_client[1],"] ACK",numero_bloc_ack," =",accuse_recep, sep="")
-    numero_bloc_ack += 1
+    numero_bloc_ack += 1"""
+
+    fichier_entier_taille = os.path.getsize(filename)
+    print("taille fichier =", fichier_entier_taille)
+    requete = bytearray()
+    requete.append(0)
+    requete.append(3)
+    requete.append(0)
+    requete.append(numero_bloc_data)                
+    emplacement = blksize
+    nombre_octets_restants = fichier_entier_taille
+    if fichier_entier_taille >= blksize:
+        partie_fichier = file_object.read(blksize)
+        requete += bytearray(partie_fichier)
+        print("requete premier ajout :",requete)
+        s.sendto(requete,addr_serveur)
+        numero_bloc_data += 1
+        del requete[:]
+        requete.append(0)
+        requete.append(3)
+        requete.append(0)
+        requete.append(numero_bloc_data)
+        nombre_octets_restants -= blksize
+        file_object.seek(emplacement)
+        
+    else :
+        fichier_entier = file_object.read()
+        requete += bytearray(fichier_entier)
+        print("requete quand inferieur a taille blksize",requete)
+        s.sendto(requete, addr_serveur)
+    accuse_recep, addr_serveur = s.recvfrom(512)
+    while nombre_octets_restants >= blksize :
+        print("nombre octets restants =", nombre_octets_restants)
+        if is_ack(accuse_recep) :
+            partie_fichier = file_object.read(blksize)
+            emplacement += blksize
+            print("data à put :", partie_fichier)
+            requete += bytearray(partie_fichier)
+            print("reqauete =",requete)
+            s.sendto(requete,addr_serveur)
+            numero_bloc_data += 1
+            del requete[:]
+            requete.append(0)
+            requete.append(3)
+            requete.append(0)
+            requete.append(numero_bloc_data)
+            nombre_octets_restants -= blksize
+            file_object.seek(emplacement)
+            accuse_recep, addr_serveur = s.recvfrom(512)
+    if is_ack(accuse_recep) :
+        partie_fichier = file_object.read()
+        emplacement += blksize
+        print("data à put :", partie_fichier)
+        requete += bytearray(partie_fichier)
+        print("requete a envoyé :",requete)
+        s.sendto(requete,addr_serveur)
+
     s.close()
     pass
 
