@@ -31,7 +31,22 @@ def runServer(addr, timeout, thread):
         opcode = int.from_bytes(frame1, byteorder='big')  
         args = frame2.split(b'\x00')                      
         filename = args[0].decode('ascii')                
-        mode = args[1].decode('ascii') 
+        mode = args[1].decode('ascii')
+        if args[2].decode('ascii') != '':
+            blksize = args[2].decode('ascii')
+        else :
+            blksize = 512
+        copie = "blksize"
+        print("copie =",copie)
+        print("blksize =",blksize)
+        if blksize == copie :
+            print("entree dans if")
+            taille_bloc = args[3].decode('utf-8')
+            taille_bloc = int(taille_bloc)
+            print("taille bloc =", taille_bloc)
+        else :
+            taille_bloc = 512
+
         
         if opcode == 2 :                                                                # LORSQUE LE SERVEUR RECOIT UNE REQUÈTE DE TYPE WRITE 
             socket_reception = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -66,7 +81,7 @@ def runServer(addr, timeout, thread):
                 frame2 = frame[4:]
                 numero += 1
                 print("taille bloc de data :", len(frame2))
-                while len(frame2) == 512 :
+                while len(frame2) == taille_bloc :
                     print("paquet à ecrire sur le fichier serveur :",frame2)
                     targetname.write(frame2)
                     ack.append(0)
@@ -119,6 +134,7 @@ def runServer(addr, timeout, thread):
                 socket_envoie.close()
                 
             else :
+                print("entree dans else")
                 requete = bytearray()
                 requete.append(0)
                 requete.append(3)
@@ -126,8 +142,8 @@ def runServer(addr, timeout, thread):
                 requete.append(numero_bloc_data)                
                 for line in file_object :
                     for i in line :  
-                        if len(requete) - 4 == 512 :
-                            print("requete = ",requete )
+                        if (len(requete) - 4) == taille_bloc :
+                            print("requete = ",requete)
                             print("taille de la requete :",len(requete)) 
                             socket_envoie.sendto(requete,addr_client)
                             numero_bloc_data += 1
@@ -136,7 +152,10 @@ def runServer(addr, timeout, thread):
                             requete.append(3)
                             requete.append(0)
                             requete.append(numero_bloc_data)
+                            
                         requete += bytearray(chr(i).encode('utf-8'))
+                        print("taille requete =",len(requete) - 4)
+                        print("taille bloc blksize =", taille_bloc)
                 socket_envoie.sendto(requete,addr_client)
         
         
@@ -166,6 +185,13 @@ def put(addr, filename, targetname, blksize, timeout):
     mode = bytearray(bytes('octet', 'utf-8'))
     requete += mode
     requete.append(0)
+    print("blksize =",blksize)
+    if blksize != 512 :
+        taille_bloc = bytearray(bytes('blksize','utf-8'))
+        requete += taille_bloc
+        requete.append(0)
+        requete += bytearray(bytes(str(blksize),'utf-8'))
+        requete.append(0)
     host = 'localhost'
     s.sendto(requete,(host,addr[1]))
     port_client = s.getsockname()
@@ -200,7 +226,7 @@ def put(addr, filename, targetname, blksize, timeout):
     requete.append(numero_bloc_data)
     for line in file_to_put :
         for i in line :
-            if len(requete) - 4 == 512 :
+            if (len(requete) - 4) == blksize :
                 if is_ack(accuse_recep) :
                     s.sendto(requete,addr_serveur)
                     print("[myclient:",port_client[1]," -> myserver :",addr_serveur[1],"] DAT",numero_bloc_data, "=",requete, sep="")
@@ -242,6 +268,13 @@ def get(addr, filename, targetname, blksize, timeout):
     mode = bytearray(bytes('octet', 'utf-8'))
     requete += mode
     requete.append(0)
+    if blksize != 512 :
+        taille_bloc = bytearray(bytes('blksize','utf-8'))
+        requete += taille_bloc
+        requete.append(0)
+        requete += bytearray(bytes(str(blksize),'utf-8'))
+        requete.append(0)
+    print("blksize =", blksize)
     s.sendto(requete,('localhost',addr[1]))
     port_client = s.getsockname()
     print("[myclient:",port_client[1]," -> myserver :",addr[1],"] RRQ =",requete)
@@ -259,7 +292,7 @@ def get(addr, filename, targetname, blksize, timeout):
     args = frame2.split(b'\x00')
     numero = 1
     ack = bytearray()
-    while len(frame2) == 512 :
+    while len(frame2) == blksize :
         targetname.write(frame2)
         ack.append(0)
         ack.append(4)
@@ -274,7 +307,7 @@ def get(addr, filename, targetname, blksize, timeout):
         numero += 1
         frame = data_retour
         frame2 = frame[4:]
-    if len(frame2) < 512 :
+    if len(frame2) < blksize :
             ack.append(0)
             ack.append(4)
             ack.append(0)
@@ -313,3 +346,4 @@ def is_ack(data) :
         return True 
     else :
         return False
+
